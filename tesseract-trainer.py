@@ -27,14 +27,18 @@ for file in os.listdir(cwdInput):
     copy =f'copy {cwdInput}{file} workDir\\{file}'
     print(copy)
     os.system(copy)
-    if file.endswith('.tif'):
+    if file.endswith('.tiff'):
+        #rename = 'mv '+files+' '+language+'.'+fontname+'.exp'+str(count)+'.tif'
         rename =f'rename workDir\\{file} {language}.{fontname}.exp{tifCount}.tif'
         print(rename)
         os.system(rename)
+        tifCount+=1
     if file.endswith('.box'):
+        #command='tesseract eng.'+fontname+'.exp'+str(count)+'.tif eng.'+fontname+'.exp'+str(count)+' nobatch box.train.stderr'
         rename =f'rename workDir\\{file} {language}.{fontname}.exp{boxCount}.box'
         print(rename)
         os.system(rename)
+        boxCount+=1
     
         
 
