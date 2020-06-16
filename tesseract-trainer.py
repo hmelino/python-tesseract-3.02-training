@@ -10,7 +10,8 @@ Edited by Matus Hmelar 17/04/2020
 # Complete the documentation 
 
 import os
-fontname = 'your_new_font'
+import subprocess
+fontname = 'hsbc'
 language = 'eng'
 cwd=os.getcwd()
 cwdInput=cwd+'\\Input\\'
@@ -19,24 +20,37 @@ os.system(f'cd {cwd}')
 os.system(f'mkdir workDir')
 
 print('Tesseract Font Builder - assumes training TIFFs and boxfiles already created')
-print('Note: Only up to 32 .tiff files are supported for training purposes')
+#print('Note: Only up to 32 .tiff files are supported for training purposes')
+
+#Delete output file
+os.system(f'del {cwd}\\Output\\{fontname}.traineddata')
+
+dFcount=0
+#Empty WorkDir
+for file in os.listdir('WorkDir\\'):
+    delete=f'del {cwd}\\WorkDir\\{file}'
+    #print(delete)
+    os.system(delete)
+    dFcount+=1
+print(f'Deleted {dFcount} files in {cwd}\WorkDir')
+
 tifCount = 0
 boxCount = 0
 #Copy all files into working directory
-for file in os.listdir(cwdInput):
-    copy =f'copy {cwdInput}{file} workDir\\{file}'
-    print(copy)
+for file in os.listdir('Input\\'):
+    copy =f'copy {cwd}\\Input\\{file} workDir\\{file} >NUL'
+    #print(copy)
     os.system(copy)
     if file.endswith('.tiff'):
         #rename = 'mv '+files+' '+language+'.'+fontname+'.exp'+str(count)+'.tif'
-        rename =f'rename workDir\\{file} {language}.{fontname}.exp{tifCount}.tif'
-        print(rename)
+        rename =f'rename {cwd}\\workDir\\{file} {language}.{fontname}.exp{tifCount}.tif'
+        #print(rename)
         os.system(rename)
         tifCount+=1
     if file.endswith('.box'):
         #command='tesseract eng.'+fontname+'.exp'+str(count)+'.tif eng.'+fontname+'.exp'+str(count)+' nobatch box.train.stderr'
-        rename =f'rename workDir\\{file} {language}.{fontname}.exp{boxCount}.box'
-        print(rename)
+        rename =f'rename {cwd}\\workDir\\{file} {language}.{fontname}.exp{boxCount}.box'
+        #print(rename)
         os.system(rename)
         boxCount+=1
     
@@ -46,80 +60,94 @@ for file in os.listdir(cwdInput):
 for files in os.listdir(workingDir):
     if files.endswith(".tif"):
         fData=files.split('.')
-        command=f'tesseract {workingDir}{files} {files[:-4]} nobatch box.train.stderr'
-        print(command) 
+        #comand = subprocess.Popen(f'tesseract {cwd}\\workDir\\{files} {files[:-4]} nobatch box.train.stderr',stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        #comand= subprocess.run(f'tesseract {cwd}\\workDir\\{files} {files[:-4]} nobatch box.train.stderr',stdout=subprocess.PIPE)
+        #o=comand.stdout
+        command=f'tesseract {cwd}\\workDir\\{files} {files[:-4]} nobatch box.train.stderr'
+        #print(command) 
         os.system(command)
 
 #Copy created data into working directory
 for file in os.listdir(cwd):
     if file.endswith('.tr'):
-        move =f'move {cwd}\\{file} {workingDir}\\{file}'
-        print(move)
+        move =f'move {cwd}\\{file} {cwd}\\WorkDir\\{file}'
+        #print(move)
         os.system(move)
 
 trfilelist = ''
 boxfilelist = ''
 font_properties = ''
 
+
 for files in os.listdir(workingDir):
     if files.endswith(".tr"):
-        trfilelist = f'{trfilelist} {workingDir}{files}'
+        trfilelist = f'{trfilelist} {cwd}\\WorkDir\\{files}'
         font_properties = fontname+' 0 0 0 0 0'    
     if files.endswith(".box"):
-        boxfilelist =f'{boxfilelist} {workingDir}{files}'
+        boxfilelist =f'{boxfilelist} {cwd}\\WorkDir\\{files}'
 
 #Build the Unicharset File
 command2 = f'unicharset_extractor {boxfilelist} '
 print(command2)
-os.system(command2)
+
+subprocess.run(command2)
+#os.system(command2)
 
 #Move unicharset into working Directory
-os.system(f'move {cwd}\\unicharset {workingDir}')
+os.system(f'move {cwd}\\unicharset {cwd}\\WorkDir')
 
 #Build the font properties file  
-fontpropertiesfile = open(f'{workingDir}\\font_properties', 'a+') # saving into a file        
+fontpropertiesfile = open(f'{cwd}\\WorkDir\\font_properties', 'a+') # saving into a file        
 fontpropertiesfile.write(font_properties)
 print('Wrote font_properties file')
 fontpropertiesfile.close()
 
 #Clustering
-command3 = f'shapeclustering -F {workingDir}\\font_properties -U {workingDir}\\unicharset ' + trfilelist
+command3 = f'shapeclustering -F {cwd}\\WorkDir\\font_properties -U {cwd}\\WorkDir\\unicharset ' + trfilelist
 
 #command3 = 'shapeclustering '
 print(command3)
-os.system(command3)
+#os.system(command3)
+subprocess.run(command3)
 
 #move shapetable
-os.system(f'move {cwd}\\shapetable {workingDir}')
-mftraining = f'mftraining -F {workingDir}\\font_properties -U {workingDir}\\unicharset -O {workingDir}\\'+fontname+'.charset '+trfilelist
+os.system(f'move {cwd}\\shapetable {cwd}\\WorkDir')
+mftraining = f'mftraining -F {cwd}\\WorkDir\\font_properties -U {cwd}\\WorkDir\\unicharset -O {cwd}\\WorkDir\\'+fontname+'.charset '+trfilelist
 print (mftraining)
-os.system(mftraining)
+subprocess.run(mftraining)
+#os.system(mftraining)
 
 #move inttemp pffmtable shapetable
-os.system(f'move {cwd}\\inttemp {workingDir}')
-os.system(f'move {cwd}\\pffmtable {workingDir}')
-os.system(f'move {cwd}\\shapetable {workingDir}')
+os.system(f'move {cwd}\\inttemp {cwd}\\WorkDir')
+os.system(f'move {cwd}\\pffmtable {cwd}\\WorkDir')
+os.system(f'move {cwd}\\shapetable {cwd}\\WorkDir')
 
 #CNTraining
 command4 = 'cntraining ' + trfilelist
 print(command4)
-os.system(command4)
+subprocess.run(command4)
+#os.system(command4)
 
 #Move normproto
-os.system(f'move {cwd}\\normproto {workingDir}')
+os.system(f'move {cwd}\\normproto {cwd}\\WorkDir\\')
 
 #Rename necessary files
-os.system(f'rename {workingDir}\\unicharset '+fontname+'.unicharset')
-os.system(f'rename {workingDir}\\shapetable '+fontname+'.shapetable')
-os.system(f'rename {workingDir}\\normproto '+fontname+'.normproto')
-os.system(f'rename {workingDir}\\pffmtable '+fontname+'.pffmtable')
-os.system(f'rename {workingDir}\\inttemp '+fontname+'.inttemp')
+os.system(f'rename {cwd}\\WorkDir\\unicharset '+fontname+'.unicharset')
+os.system(f'rename {cwd}\\WorkDir\\shapetable '+fontname+'.shapetable')
+os.system(f'rename {cwd}\\WorkDir\\normproto '+fontname+'.normproto')
+os.system(f'rename {cwd}\\WorkDir\\pffmtable '+fontname+'.pffmtable')
+os.system(f'rename {cwd}\\WorkDir\\inttemp '+fontname+'.inttemp')
 
 ##Put it all together
-command5 = f'combine_tessdata {workingDir}\\'+fontname+'.'
+command5 = f'combine_tessdata {cwd}\\WorkDir\\'+fontname+'.'
 os.system(command5)
 
 #Move tessData into output
 os.system(f'mkdir Output')
-os.system(f'move {workingDir}//{fontname}.traineddata {cwd}//Output')
+os.system(f'move {cwd}\\WorkDir\\{fontname}.traineddata {cwd}\\Output')
 print(f'Your {fontname}.traineddata have been saved into {cwd}\Output')
+
+os.system(f'del D:\\Program Files\\Tesseract-OCR\\tessdata\\hsbc.traineddata')
+os.system(f'copy {cwd}\\Output\\hsbc.traineddata D:\\Program Files\\Tesseract-OCR\\tessdata\\')
+
+input()
